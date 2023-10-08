@@ -3,10 +3,11 @@ import csv
 from bs4 import BeautifulSoup
 
 
+
 # Cette version permet de recuperer les infos de toutes les cathégories 
 # Ensuite le programme parcourt one by one chaque catégorie
 # Pour tous les artcicles de chaque catégorie, le programme restittue les informations démandées dans la phase 1 dans un fichiers csv 
-
+# Ce programme permet enfin de télécharger et enrégistrer les fichiers images de chaque Page Produit consultées.
 
 root='http://books.toscrape.com/catalogue'
 #
@@ -39,6 +40,10 @@ def genererCsvDeArticle(article, categorieName):
                 value.append(td)
         
         return value
+
+def generateImageFromPage(imageUrl,fileName):
+        response = requests.get(imageUrl)
+        open("output/img/"+fileName+".ico", "wb").write(response.content)
                 
 
 def main():
@@ -53,15 +58,17 @@ def main():
                         aProductLink = domaineUrl+linkA
                         productData = requests.get(aProductLink)
                         dataSoup = BeautifulSoup(productData.text,'lxml')
-                        title = dataSoup.find('head').find('title').string
+                        #title = dataSoup.find('head').find('title').string
                         articles = dataSoup.findAll('article')
 
-                        headers = ["Product page Url","Tittle","Image Url","Category","UPC","Product type","Price (incl. tax)","Price (excl. tax)","Tax","Number Availability","Number of reviews"]
+                        headers = ["Product page Url","Title","Image Url","Category","UPC","Product type","Price (incl. tax)","Price (excl. tax)","Tax","Number Availability","Number of reviews"]
                         csvContent = []
                         csvContent.append(headers)
 
                         for article in articles:
                                 value = genererCsvDeArticle(article, categorieName)
+                                imgUrl = "http://books.toscrape.com/"+value[2].lstrip('../../../')
+                                generateImageFromPage(imgUrl, value[1])
                                 csvContent.append(value)
 
                         with open("output/"+categorieName+'.csv', 'w', newline='') as file:
