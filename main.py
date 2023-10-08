@@ -2,16 +2,18 @@ import requests
 import csv
 from bs4 import BeautifulSoup
 
+
 # Cette version permet de recuperer les infos de la page catégorie travel 
 # ensuite le pro parcourt tous les articles (livres) de cette page
-# il sélectionne juste un artcile de cette liste 
-# Pour cet article il affcihe ces infos dans un csv (voir projet phase1)
+# Pour tous les artcicles de cette catégorie, le programme restittue les informations démandées dans la phase 1 dans un fichiers csv 
+
+
 
 
 root='http://books.toscrape.com/catalogue'
-
+#
 homePageUrl = "http://books.toscrape.com/index.html"
-
+#
 domaineUrl = "http://books.toscrape.com/"
 
 categorieName = "Travel"
@@ -53,9 +55,9 @@ def main():
                 csvContent = []
                 csvContent.append(headers)
 
-                
-                value = genererCsvDeArticle(articles[0])
-                csvContent.append(value)
+                for article in articles:
+                        value = genererCsvDeArticle(article)
+                        csvContent.append(value)
 
                 with open("output/"+categorieName+'.csv', 'w', newline='') as file:
                         writer = csv.writer(file)
@@ -64,5 +66,3 @@ def main():
 main()
 
 
-
- 
