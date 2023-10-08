@@ -3,11 +3,9 @@ import csv
 from bs4 import BeautifulSoup
 
 
-# Cette version permet de recuperer les infos de la page catégorie travel 
-# ensuite le pro parcourt tous les articles (livres) de cette page
-# Pour tous les artcicles de cette catégorie, le programme restittue les informations démandées dans la phase 1 dans un fichiers csv 
-
-
+# Cette version permet de recuperer les infos de toutes les cathégories 
+# Ensuite le programme parcourt one by one chaque catégorie
+# Pour tous les artcicles de chaque catégorie, le programme restittue les informations démandées dans la phase 1 dans un fichiers csv 
 
 
 root='http://books.toscrape.com/catalogue'
@@ -16,9 +14,8 @@ homePageUrl = "http://books.toscrape.com/index.html"
 #
 domaineUrl = "http://books.toscrape.com/"
 
-categorieName = "Travel"
 
-def genererCsvDeArticle(article):
+def genererCsvDeArticle(article, categorieName):
         
         a = article.find('div').find('a',href=True)
         href = a['href']
@@ -45,24 +42,30 @@ def genererCsvDeArticle(article):
                 
 
 def main():
-        travelPage = requests.get(root+"/category/books/travel_2/index.html")
-        if travelPage.ok:
-                dataSoup = BeautifulSoup(travelPage.text,'lxml')
-                title = dataSoup.find('head').find('title').string
-                articles = dataSoup.findAll('article')
+        homePageUrlResponse = requests.get(homePageUrl)
+        if homePageUrlResponse.ok:
+                soup = BeautifulSoup(homePageUrlResponse.text, 'lxml')
+                allCategories = soup.find('ul', {"class":"nav nav-list"}).find('li').find('ul').findAll('li')
+                for categorie in allCategories:
+                        aHref= categorie.find('a')
+                        categorieName = " ".join(aHref.string.split())
+                        linkA = aHref['href']	
+                        aProductLink = domaineUrl+linkA
+                        productData = requests.get(aProductLink)
+                        dataSoup = BeautifulSoup(productData.text,'lxml')
+                        title = dataSoup.find('head').find('title').string
+                        articles = dataSoup.findAll('article')
 
-                headers = ["Product page Url","Tittle","Image Url","Category","UPC","Product type","Price (incl. tax)","Price (excl. tax)","Tax","Number Availability","Number of reviews"]
-                csvContent = []
-                csvContent.append(headers)
+                        headers = ["Product page Url","Tittle","Image Url","Category","UPC","Product type","Price (incl. tax)","Price (excl. tax)","Tax","Number Availability","Number of reviews"]
+                        csvContent = []
+                        csvContent.append(headers)
 
-                for article in articles:
-                        value = genererCsvDeArticle(article)
-                        csvContent.append(value)
+                        for article in articles:
+                                value = genererCsvDeArticle(article, categorieName)
+                                csvContent.append(value)
 
-                with open("output/"+categorieName+'.csv', 'w', newline='') as file:
-                        writer = csv.writer(file)
-                        writer.writerows(csvContent)
+                        with open("output/"+categorieName+'.csv', 'w', newline='') as file:
+                                writer = csv.writer(file)
+                                writer.writerows(csvContent)
 
 main()
-
-
