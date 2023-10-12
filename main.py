@@ -1,19 +1,23 @@
 import requests
 import csv
 from bs4 import BeautifulSoup
+import os
 
 
+root='http://books.toscrape.com/catalogue'
+homePageUrl = "http://books.toscrape.com/index.html"
+domaineUrl = "http://books.toscrape.com/"
 
-# Cette version permet de recuperer les infos de toutes les cathégories 
+#Cette version permet de recuperer les infos de toutes les cathégories 
 # Ensuite le programme parcourt one by one chaque catégorie
 # Pour tous les artcicles de chaque catégorie, le programme restittue les informations démandées dans la phase 1 dans un fichiers csv 
 # Ce programme permet enfin de télécharger et enrégistrer les fichiers images de chaque Page Produit consultées.
 
-root='http://books.toscrape.com/catalogue'
-#
-homePageUrl = "http://books.toscrape.com/index.html"
-#
-domaineUrl = "http://books.toscrape.com/"
+def generateFolder(folderName):
+        isExist = os.path.exists(folderName)
+        if not isExist:
+           os.makedirs(folderName)
+           
 
 
 def genererCsvDeArticle(article, categorieName):
@@ -24,8 +28,14 @@ def genererCsvDeArticle(article, categorieName):
         productPageUrl = root+'/'+link
         productData = requests.get(productPageUrl)
         dataSoup = BeautifulSoup(productData.text,'lxml')
-        title = dataSoup.find('head').find('title').string
-        imgUrl = dataSoup.find("div",{"class":"item active"}).find('img')['src']
+        descSoup = dataSoup.find(id="product_description")
+        description = ""
+        if descSoup:
+                description = dataSoup.find(id="product_description").find_next("p").string
+                
+        title = dataSoup.find('h1').string
+        img = dataSoup.find("div",{"class":"item active"}).find('img')['src']
+        imgUrl = "http://books.toscrape.com/"+img.lstrip('../../../')
         value = []
         tables = dataSoup.findChildren('table')
         my_table = tables[0]
@@ -39,14 +49,20 @@ def genererCsvDeArticle(article, categorieName):
                 td = row.find('td').string
                 value.append(td)
         
+        value.append(description)
         return value
 
 def generateImageFromPage(imageUrl,fileName):
         response = requests.get(imageUrl)
-        open("output/img/"+fileName+".ico", "wb").write(response.content)
+        outputFolder = "output/img/"
+        
+        open(outputFolder+fileName+".jpg", "wb").write(response.content)
                 
 
-def main():
+def main():   
+        generateFolder("output")
+        generateFolder("output/img")
+        
         homePageUrlResponse = requests.get(homePageUrl)
         if homePageUrlResponse.ok:
                 soup = BeautifulSoup(homePageUrlResponse.text, 'lxml')
@@ -54,11 +70,10 @@ def main():
                 for categorie in allCategories:
                         aHref= categorie.find('a')
                         categorieName = " ".join(aHref.string.split())
-                        linkA = aHref['href']	
+                        linkA = aHref['href'] 
                         aProductLink = domaineUrl+linkA
                         productData = requests.get(aProductLink)
                         dataSoup = BeautifulSoup(productData.text,'lxml')
-                        #title = dataSoup.find('head').find('title').string
                         articles = dataSoup.findAll('article')
 
                         headers = ["Product page Url","Title","Image Url","Category","UPC","Product type","Price (incl. tax)","Price (excl. tax)","Tax","Number Availability","Number of reviews"]
@@ -67,10 +82,11 @@ def main():
 
                         for article in articles:
                                 value = genererCsvDeArticle(article, categorieName)
-                                imgUrl = "http://books.toscrape.com/"+value[2].lstrip('../../../')
-                                generateImageFromPage(imgUrl, value[1])
+                                generateImageFromPage(value[2], value[1])
                                 csvContent.append(value)
 
+                        
+                            
                         with open("output/"+categorieName+'.csv', 'w', newline='') as file:
                                 writer = csv.writer(file)
                                 writer.writerows(csvContent)
