@@ -1,7 +1,0 @@
-Programme
-
-Pour que le programme puisse être tester sans erreur :
-
-Créer un répertoire nommé output à la racine du projet 
-
-Ensuite créer dans le répertoire output un répertoire img 
