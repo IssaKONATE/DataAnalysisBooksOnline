@@ -21,7 +21,7 @@ def generateFolder(folderName):
 
 
 def genererCsvDeArticle(article, categorieName):
-        
+
         a = article.find('div').find('a',href=True)
         href = a['href']
         link = href.lstrip('../../../')
@@ -54,12 +54,36 @@ def genererCsvDeArticle(article, categorieName):
 
 def generateImageFromPage(imageUrl,fileName):
         response = requests.get(imageUrl)
+        newFilename = fileName.replace('/','')
         outputFolder = "output/img/"
         
-        open(outputFolder+fileName+".jpg", "wb").write(response.content)
+        open(outputFolder+newFilename+".jpg", "wb").write(response.content)
+
+
+def findAllArticles(dataSoup, myrequest, aProductLink):
+        
+        articles = (dataSoup.findAll('article'))
+        numero = 1
+
+        while dataSoup.find('li',{"class":"next"}) != None:
+                numero = numero+1
+                page = aProductLink.rstrip("index.html")+"page-"+(str(numero))+".html"
+
+                print(page)
+                productData = requests.get(page)
+                dataSoup = BeautifulSoup(productData.text,'lxml')
+                articles.extend(dataSoup.findAll('article'))
+
+
+        return articles
+                            
+        
+        
                 
 
-def main():   
+def main():
+
+        print("Debut execution du programme")
         generateFolder("output")
         generateFolder("output/img")
         
@@ -74,9 +98,11 @@ def main():
                         aProductLink = domaineUrl+linkA
                         productData = requests.get(aProductLink)
                         dataSoup = BeautifulSoup(productData.text,'lxml')
-                        articles = dataSoup.findAll('article')
+                        #articles = dataSoup.findAll('article')
 
-                        headers = ["Product page Url","Title","Image Url","Category","UPC","Product type","Price (incl. tax)","Price (excl. tax)","Tax","Number Availability","Number of reviews"]
+                        articles = findAllArticles(dataSoup, requests,aProductLink)
+
+                        headers = ["Product page Url","Title","Image Url","Category","UPC","Product type","Price (incl. tax)","Price (excl. tax)","Tax","Number Availability","Number of reviews","Description"]
                         csvContent = []
                         csvContent.append(headers)
 
@@ -90,5 +116,6 @@ def main():
                         with open("output/"+categorieName+'.csv', 'w', newline='') as file:
                                 writer = csv.writer(file)
                                 writer.writerows(csvContent)
+        print("FIN!!!!!!!!!!!!!!!!!!!")
 
 main()
